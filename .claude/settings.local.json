@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(C:\\\\reviewer\\\\workspace\\\\bowling-Kata\\\\.venv\\\\Scripts\\\\pytest C:\\\\reviewer\\\\workspace\\\\bowling-Kata\\\\test_game.py -x 2>&1)",
+      "Bash(git *)"
+    ]
+  }
+}
