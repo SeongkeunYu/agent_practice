@@ -50,26 +50,60 @@ NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 ```dot
 digraph tdd_cycle {
     rankdir=LR;
+    plan [label="RED\nPlan.md 작성", shape=box, style=filled, fillcolor="#ffcccc"];
+    human_red [label="사람 검토\n(RED)", shape=diamond, style=filled, fillcolor="#ffe0b2"];
     red [label="RED\n실패하는 테스트 작성", shape=box, style=filled, fillcolor="#ffcccc"];
     verify_red [label="제대로\n실패하는지 확인", shape=diamond];
     green [label="GREEN\n최소한의 코드", shape=box, style=filled, fillcolor="#ccffcc"];
     verify_green [label="통과 확인\n전체 그린", shape=diamond];
-    refactor [label="REFACTOR\n정리", shape=box, style=filled, fillcolor="#ccccff"];
+    review [label="REVIEW\n코드 검토", shape=box, style=filled, fillcolor="#ccccff"];
+    human_review [label="사람 검토\n(REVIEW)", shape=diamond, style=filled, fillcolor="#ffe0b2"];
     next [label="다음", shape=ellipse];
 
+    plan -> human_red;
+    human_red -> red [label="승인"];
+    human_red -> plan [label="재작성"];
     red -> verify_red;
     verify_red -> green [label="예"];
     verify_red -> red [label="잘못된\n실패"];
     green -> verify_green;
-    verify_green -> refactor [label="예"];
+    verify_green -> review [label="예"];
     verify_green -> green [label="아니오"];
-    refactor -> verify_green [label="그린 유지"];
-    verify_green -> next;
-    next -> red;
+    review -> human_review;
+    human_review -> next [label="승인"];
+    human_review -> green [label="수정 필요"];
+    next -> plan;
 }
 ```
 
-### RED - 실패하는 테스트 작성
+### RED - 계획 수립 및 테스트 작성
+
+**⚠️ 이 단계는 반드시 사람의 검토를 거쳐야 한다. 검토 없이 GREEN으로 넘어가지 말 것.**
+
+#### Step 1: Plan.md 작성
+
+테스트를 작성하기 전에 `Plan.md`를 만들어 다음을 기술하라:
+
+```markdown
+# TDD Plan
+
+## 구현할 동작
+[무엇을 구현할지 한 문장으로]
+
+## 테스트 시나리오
+- 테스트 이름: `test_<동작 설명>`
+- 입력: [테스트에 넘길 값]
+- 기대 출력: [assert가 확인할 값]
+- 실패 이유: [기능이 없어서 실패할 이유]
+
+## 엣지 케이스
+[이번 사이클에서 다룰 엣지 케이스 목록]
+```
+
+**Plan.md 작성이 끝나면 사람에게 검토를 요청하라.**
+검토가 승인된 후에만 실제 테스트 코드를 작성하라.
+
+#### Step 2: 실패하는 테스트 작성
 
 무엇이 일어나야 하는지를 보여주는 최소한의 테스트 한 개를 작성하라.
 
@@ -176,18 +210,25 @@ pytest path/to/test_file.py
 
 **다른 테스트가 실패한다?** 지금 당장 고쳐라.
 
-### REFACTOR - 정리
+### REVIEW - 코드 검토 및 정리
 
-그린 상태가 된 후에만:
-- 중복 제거
-- 이름 개선
-- 헬퍼(helper) 추출
+**⚠️ 이 단계는 반드시 사람의 검토를 거쳐야 한다. 검토 없이 다음 사이클을 시작하지 말 것.**
 
-테스트는 그린으로 유지하라. 동작을 추가하지 말라.
+그린 상태가 된 후:
+
+1. **코드 자체 점검** (사람 검토 전에 먼저 스스로):
+   - 중복 제거
+   - 이름 개선
+   - 헬퍼(helper) 추출
+   - 테스트는 그린으로 유지, 동작을 추가하지 말 것
+
+2. **사람 검토 요청**: 정리된 코드를 사람에게 보여주고 다음 사이클 진행 여부를 확인하라.
+   - 수정 요청이 있으면 GREEN으로 돌아가 수정 후 재검토
+   - 승인되면 다음 사이클의 RED로 진행
 
 ### 반복
 
-다음 기능에 대한 다음 실패하는 테스트를 작성하라.
+다음 기능에 대한 Plan.md를 작성하고 RED부터 다시 시작하라.
 
 ## 좋은 테스트
 
@@ -313,21 +354,31 @@ $ pytest
 PASSED
 ```
 
-**REFACTOR**
-여러 필드에 대한 검증이 필요해지면 검증 로직을 추출하라.
+**REVIEW**
+여러 필드에 대한 검증이 필요해지면 검증 로직을 추출하라. 사람에게 검토를 요청하고 다음 사이클로 진행하라.
 
 ## 검증 체크리스트
 
 작업을 완료(complete)로 표시하기 전에:
 
-- [ ] 모든 새 함수/메서드에 테스트가 있다
+**RED 단계 체크 (사람 검토 전)**
+- [ ] Plan.md를 작성했다
+- [ ] 사람이 Plan.md를 검토하고 승인했다
 - [ ] 각 테스트가 실패하는 것을 직접 보고 구현했다
 - [ ] 각 테스트가 예상한 이유로 실패했다 (오타가 아니라 기능 부재로)
+
+**GREEN 단계 체크**
+- [ ] 모든 새 함수/메서드에 테스트가 있다
 - [ ] 각 테스트를 통과시키는 최소한의 코드를 작성했다
 - [ ] 모든 테스트가 통과한다
 - [ ] 출력이 깨끗하다 (에러, 경고 없음)
 - [ ] 테스트가 실제 코드를 사용한다 (mock은 불가피할 때만)
 - [ ] 엣지 케이스와 에러 케이스가 커버되어 있다
+
+**REVIEW 단계 체크 (사람 검토 전)**
+- [ ] 중복 제거, 이름 개선 등 정리를 완료했다
+- [ ] 모든 테스트가 여전히 그린이다
+- [ ] 사람이 REVIEW 단계를 검토하고 다음 사이클을 승인했다
 
 체크박스를 모두 채울 수 없다면? TDD를 건너뛴 것이다. 처음부터 다시 시작하라.
 
@@ -412,6 +463,11 @@ pytest -s
 ```
 프로덕션 코드 → 테스트가 존재하고, 먼저 실패했다
 그 외 → TDD가 아니다
+```
+
+```
+RED 완료 → 사람 검토 후 GREEN 진입
+REVIEW 완료 → 사람 검토 후 다음 사이클 진입
 ```
 
 사람 파트너의 허가 없이는 예외 없음.
